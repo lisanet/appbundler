@@ -710,6 +710,9 @@ public class AppBundlerTask extends Task {
             xout.writeStartElement(ARRAY_TAG);
             xout.writeCharacters("\n");
 
+            // make menu items About, Hide and Quit use name
+            writeString(xout, "-Xdock:name=" + name);
+
             for (Option option : options) {
                 if (option.getName() == null) writeString(xout, option.getValue());
             }
