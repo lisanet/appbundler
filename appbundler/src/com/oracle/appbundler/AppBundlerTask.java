@@ -81,7 +81,7 @@ public class AppBundlerTask extends Task {
     private String applicationCategory = null;
 
     private boolean highResolutionCapable = true;
-    private boolean supportsAutomaticGraphicsSwitching = true;
+    private boolean supportsAutomaticGraphicsSwitching = false;
     private boolean hideDockIcon = false;
     private boolean isDebug = false;
 
