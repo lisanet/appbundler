@@ -27,6 +27,7 @@
 #import <Cocoa/Cocoa.h>
 #include <dlfcn.h>
 #include <jni.h>
+#include <stdlib.h>
 
 #define JAVA_LAUNCH_ERROR "JavaLaunchError"
 
@@ -66,8 +67,7 @@ static int launchCount = 0;
 
 int launch(char *, int, char **);
 NSString * findDylib (bool);
-int extractMajorVersion (NSString *vstring)
-;NSString * convertRelativeFilePath(NSString * path);
+NSString * convertRelativeFilePath(NSString * path);
 
 int main(int argc, char *argv[]) {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -85,9 +85,22 @@ int main(int argc, char *argv[]) {
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setAlertStyle:NSCriticalAlertStyle];
         [alert setMessageText:[exception reason]];
-        [alert runModal];
-
-        result = 1;
+      
+        if ([[exception name] isEqualToString: @"NoJREError"]) {
+          [alert addButtonWithTitle: NSLocalizedString(@"Load", nil)];
+          [alert addButtonWithTitle: NSLocalizedString(@"Cancel", nil)];
+          [alert setInformativeText: NSLocalizedString(@"NoJREInfo", @"click to go to website of JRE")];
+        
+          result = [alert runModal];
+          if (result == NSAlertFirstButtonReturn) {
+            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString: @"http://java.com/download/"]];
+            result = 0;
+          }
+          
+        } else {
+          [alert runModal];
+          result = 1;
+        }
     }
 
     [pool drain];
@@ -166,9 +179,9 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     }
 
     if (jli_LaunchFxnPtr == NULL) {
-        [[NSException exceptionWithName:@JAVA_LAUNCH_ERROR
-            reason:NSLocalizedString(@"JRELoadError", @UNSPECIFIED_ERROR)
-            userInfo:nil] raise];
+      [[NSException exceptionWithName: @"NoJREError"
+                               reason: NSLocalizedString(@"needsJRE", @"Need to download JRE")
+                             userInfo: nil] raise];
     }
 
     // Get the main class name
@@ -368,182 +381,38 @@ int launch(char *commandName, int progargc, char *progargv[]) {
 NSString * findDylib (
         bool isDebugging)
 {
+    NSString *javaDylib = nil;
+  
     if (isDebugging) { NSLog (@"Searching for a JRE."); }
-
-//  Try the "java -version" command and see if we get a 1.7 or later response 
-//  (note that for unknown but ancient reasons, the result is output to stderr).
-//  If we do then return address for dylib that should be in the JRE package.
-    @try
-    {
-        NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@JRE_JAVA];
-        
-        NSArray *args = [NSArray arrayWithObjects: @"-version", nil];
-        [task setArguments:args];
-        
-        NSPipe *stdout = [NSPipe pipe];
-        [task setStandardOutput:stdout];
-        
-        NSPipe *stderr = [NSPipe pipe];
-        [task setStandardError:stderr];
-        
-        [task setStandardInput:[NSPipe pipe]];
-        
-        NSFileHandle *outHandle = [stdout fileHandleForReading];
-        NSFileHandle *errHandle = [stderr fileHandleForReading];
-        
-        [task launch];
-        [task waitUntilExit];
-        [task release];
-        
-        NSData *data1 = [outHandle readDataToEndOfFile];
-        NSData *data2 = [errHandle readDataToEndOfFile];
-        
-        NSString *outRead = [[NSString alloc] initWithData:data1
-                                                  encoding:NSUTF8StringEncoding];
-        NSString *errRead = [[NSString alloc] initWithData:data2
-                                                  encoding:NSUTF8StringEncoding];
-
-    //  Found something in errRead. Parse it for a Java version string and
-    //  try to extract a major version number.
-        if (errRead != nil) {
-            int version = 0;
-
-            NSRange vrange = [errRead rangeOfString:@"java version \"1."];
-
-            if (vrange.location != NSNotFound) {
-                NSString *vstring = [errRead substringFromIndex:(vrange.location + 14)];
-
-                vrange  = [vstring rangeOfString:@"\""];
-                vstring = [vstring substringToIndex:vrange.location];
-
-                version = extractMajorVersion(vstring);
-
-                if (isDebugging) {
-                    NSLog (@"Found a Java %@ JRE", vstring);
-                    NSLog (@"Looks like major version %d", extractMajorVersion(vstring));
-                }
-            }
-
-            if ( version >= 7 ) {
-                if (isDebugging) {
-                    NSLog (@"JRE version qualifies");
-                }
-                return @JRE_DYLIB;
-            }
-        }
+  
+    if ([[NSFileManager defaultManager] fileExistsAtPath: @JRE_JAVA]) {
+      /* Since we're running on 10.7+ only and Oracle JRE 7+ installs in /Library/Java and JRE6 from Apple
+       * was installed in /System/Library/Java
+       * we only need to test for JRE_JAVA to get JRE 7+
+       * If for some reason, we really, really need to check the version, this if-statement will do:
+       *
+       * if (!system ("test $(\"" JRE_JAVA "\" -version 2>&1 | grep 'version' | sed  's|.*1.||;s|\\..*||') -ge 7")) {
+            javaDylib = @JRE_DYLIB;
+       * }
+       */
+      javaDylib = @JRE_DYLIB;
     }
-    @catch (NSException *exception)
+    else
     {
-        NSLog (@"JRE search exception: '%@'", [exception reason]);
+      if (isDebugging) { NSLog (@"Could not find a JRE. Will look for a JDK."); }
+      if (!system("/usr/libexec/java_home -v 1.7+"))
+      {
+        system("/usr/libexec/java_home > /tmp/java_home");
+        javaDylib = [NSString stringWithContentsOfFile: @"/tmp/java_home"
+                                              encoding: NSUTF8StringEncoding
+                                                 error: NULL];
+        javaDylib = [javaDylib stringByAppendingString: @"/jre/lib/jli/libjli.dylib"];
+      }
     }
-
-    if (isDebugging) { NSLog (@"Could not find a JRE. Will look for a JDK."); }
-
-//  Having failed to find a JRE in the usual location, see if a JDK is installed
-//  (probably in /Library/Java/JavaVirtualMachines). If so, return address of
-//  dylib in the JRE within the JDK.
-    @try
-    {
-        NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@"/usr/libexec/java_home"];
-
-        NSArray *args = [NSArray arrayWithObjects: @"-v", @"1.7+", nil];
-        [task setArguments:args];
-
-        NSPipe *stdout = [NSPipe pipe];
-        [task setStandardOutput:stdout];
-
-        NSPipe *stderr = [NSPipe pipe];
-        [task setStandardError:stderr];
-
-        [task setStandardInput:[NSPipe pipe]];
-
-        NSFileHandle *outHandle = [stdout fileHandleForReading];
-        NSFileHandle *errHandle = [stderr fileHandleForReading];
-
-        [task launch];
-        [task waitUntilExit];
-        [task release];
-
-        NSData *data1 = [outHandle readDataToEndOfFile];
-        NSData *data2 = [errHandle readDataToEndOfFile];
-
-        NSString *outRead = [[NSString alloc] initWithData:data1
-                                                    encoding:NSUTF8StringEncoding];
-        NSString *errRead = [[NSString alloc] initWithData:data2
-                                                    encoding:NSUTF8StringEncoding];
-
-    //  If matching JDK not found, outRead will include something like
-    //  "Unable to find any JVMs matching version "1.X"."
-        if ( errRead != nil
-                && [errRead rangeOfString:@"Unable"].location != NSNotFound )
-        {
-            if (isDebugging) {  NSLog (@"No matching JDK found."); }
-            return nil;
-        }
-
-        int version = 0;
-
-        NSRange vrange = [outRead rangeOfString:@"jdk1."];
-
-        if (vrange.location != NSNotFound) {
-            NSString *vstring = [outRead substringFromIndex:(vrange.location)];
-
-            vrange  = [vstring rangeOfString:@"/"];
-            vstring = [vstring substringToIndex:vrange.location];
-
-            version = extractMajorVersion(vstring);
-
-            if (isDebugging) {
-                NSLog (@"Found a Java %@ JDK", vstring);
-                NSLog (@"Looks like major version %d", extractMajorVersion(vstring));
-            }
-        }
-
-        if ( version >= 7 ) {
-            if (isDebugging) {
-                NSLog (@"JDK version qualifies");
-            }
-            return [[outRead stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-                                    stringByAppendingPathComponent:@"/jre/lib/jli/libjli.dylib"];
-        }
-    }
-    @catch (NSException *exception)
-    {
-        NSLog (@"JDK search exception: '%@'", [exception reason]);
-    }
-
-    return nil;
+  
+    return javaDylib;
 }
 
-/**
- *  Extract the Java major version number from a string. We expect the input
- *  to look like either either "1.X.Y_ZZ" or "jkd1.X.Y_ZZ", and the returned
- *  result will be the integral value of X. Any failure to parse the string
- *  will return 0.
- */
-int extractMajorVersion (NSString *vstring)
-{
-//  Expecting either a java version of form 1.X.Y_ZZ or jkd1.X.Y_ZZ.
-//  Strip off everything at start up to and including the "1."
-    NSUInteger vstart = [vstring rangeOfString:@"1."].location;
-
-    if (vstart == NSNotFound) { return 0; }
-
-    vstring = [vstring substringFromIndex:(vstart+2)];
-
-//  Now find the dot after the major version number.
-    NSUInteger vdot = [vstring rangeOfString:@"."].location;
-
-    if (vdot == NSNotFound) { return 0; }
-
-//  Strip off everything beginning at that dot.
-    vstring = [vstring substringToIndex:vdot];
-
-//  And convert what's left to an int.
-    return [vstring intValue];
-}
 
 NSString * convertRelativeFilePath(NSString * path) {
     return [path stringByStandardizingPath];

@@ -1,4 +1,11 @@
-"JRELoadError" = "Kann die Java Laufzeitumgebung nicht laden.";
+"JRELoadError" = "Die Java Laufzeitumgebung konnte nicht geladen werden.";
 "MainClassNameRequired" = "Hauptklassenname ist erforderlich.";
-"JavaDirectoryNotFound" = "Kann den Inhalt des Java-Ordners nicht lesen.";
+"JavaDirectoryNotFound" = "Das Java Verzeichnis ist nicht vorhanden.";
 "BundlePathContainsColon" = "Kann nicht vom einem Ordner aus starten, der \"/\" in seinem Namen enthält.";
+/* click to go to website of JRE */
+"NoJREInfo" = "Klicken Sie auf 'Laden' um die Website mit dem Download des Java-Paketes zu öffnen.";
+/* Need to download JRE */
+"needsJRE" = "Um diese Anwendung zu öffnen, benötigen Sie das Java SE Runtime Environment. Möchten Sie es laden und installieren?";
+"Load" = "Laden";
+"Cancel" = "Abbrechen";
+

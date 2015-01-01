@@ -2,3 +2,7 @@
 "MainClassNameRequired" = "Main class name is required.";
 "JavaDirectoryNotFound" = "Unable to enumerate Java directory contents.";
 "BundlePathContainsColon" = "Cannot launch from folder that contains a \"/\" in its name.";
+/* click to go to website of JRE */
+"NoJREInfo" = "Click 'Load' to visit the Java download website.";
+/* Need to download JRE */
+"needsJRE" = "To open this application, you need the Java SE runtime environment. Would you like to install it now?";
