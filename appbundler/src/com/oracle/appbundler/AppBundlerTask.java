@@ -70,8 +70,8 @@ public class AppBundlerTask extends Task {
     private File icon = null;
     private String executableName = EXECUTABLE_NAME;
 
-    private String shortVersion = "1.0";
-    private String version = "1.0";
+    private String shortVersion = null;
+    private String version = null;
     private String signature = "????";
     private String copyright = "";
     private String privileged = null;
@@ -559,7 +559,7 @@ public class AppBundlerTask extends Task {
             writeProperty(xout, "CFBundleName", name);
             writeProperty(xout, "CFBundlePackageType", OS_TYPE_CODE);
             writeProperty(xout, "CFBundleShortVersionString", shortVersion);
-            writeProperty(xout, "CFBundleVersion", version);
+            writeProperty(xout, "CFBundleVersion", (version != null) ? version : shortVersion);
             writeProperty(xout, "CFBundleSignature", signature);
             writeProperty(xout, "NSHumanReadableCopyright", copyright);
             if ( minimumSystemVersion != null ){
