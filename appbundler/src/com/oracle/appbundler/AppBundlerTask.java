@@ -574,6 +574,8 @@ public class AppBundlerTask extends Task {
                 xout.writeCharacters("\n");
             }
             if (highResolutionCapable) {
+                /* make sure that a Principal class exists for the application */
+                writeProperty(xout, "NSPrincipalClass", "NSApplication");
                 writeKey(xout, "NSHighResolutionCapable");
                 writeBoolean(xout, true); 
                 xout.writeCharacters("\n");
