@@ -70,7 +70,6 @@ questions.
         </condition>
 
         <exec executable="${cc}">
-            <arg line="${arch64} ${arch32}"/>
             <arg value="-I"/>
             <arg value="${javahome}/include"/>
             <arg value="-I"/>
