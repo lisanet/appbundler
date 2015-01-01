@@ -286,10 +286,6 @@ public class AppBundlerTask extends Task {
             throw new IllegalStateException("Name is required.");
         }
 
-        if (displayName == null) {
-            throw new IllegalStateException("Display name is required.");
-        }
-
         if (identifier == null) {
             throw new IllegalStateException("Identifier is required.");
         }
@@ -558,7 +554,7 @@ public class AppBundlerTask extends Task {
             writeProperty(xout, "CFBundleExecutable", executableName);
             writeProperty(xout, "CFBundleIconFile", (icon == null) ? DEFAULT_ICON_NAME : icon.getName());
             writeProperty(xout, "CFBundleIdentifier", identifier);
-            writeProperty(xout, "CFBundleDisplayName", displayName);
+            writeProperty(xout, "CFBundleDisplayName", (displayName != null) ? displayName : name);
             writeProperty(xout, "CFBundleInfoDictionaryVersion", "6.0");
             writeProperty(xout, "CFBundleName", name);
             writeProperty(xout, "CFBundlePackageType", OS_TYPE_CODE);
