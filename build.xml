@@ -69,7 +69,7 @@ questions.
             <isset property="env.JAVA_HOME"/>
         </condition>
 
-        <exec executable="${cc}">
+        <exec executable="cc">
             <arg value="-I"/>
             <arg value="${javahome}/include"/>
             <arg value="-I"/>
