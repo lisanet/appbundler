@@ -36,6 +36,9 @@ questions.
     <property name="folder.classes" value="${folder.bin}/classes"/>
     <property name="folder.res" value="res"/>
 
+    <!-- make Xcode build action work -->
+    <target name="build" depends="package"/>
+
     <!-- Compile target -->
     <target name="compile">
         <mkdir dir="${ant.project.name}/${folder.classes}"/>
