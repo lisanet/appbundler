@@ -38,6 +38,8 @@
 #define JVM_DEFAULT_OPTIONS_KEY "JVMDefaultOptions"
 #define JVM_ARGUMENTS_KEY "JVMArguments"
 #define JVM_CLASSPATH_KEY "JVMClassPath"
+#define JVM_VERSION_KEY "JVMVersion"
+#define JVM_VERSION_EXACT_KEY "JVMExact"
 #define JVM_DEBUG_KEY "JVMDebug"
 
 #define JVM_RUN_PRIVILEGED "JVMRunPrivileged"
@@ -117,7 +119,7 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     
     // Test for debugging (but only on the second runthrough)
     bool isDebugging = (launchCount > 0) && [[infoDictionary objectForKey:@JVM_DEBUG_KEY] boolValue];
-    
+	
     if (isDebugging) {
         NSLog(@"Loading Application '%@'", [infoDictionary objectForKey:@"CFBundleName"]);
     }
@@ -154,7 +156,7 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     NSString *runtimePath = [[mainBundle builtInPlugInsPath] stringByAppendingPathComponent:runtime];
     if (runtime != nil)
     {
-        javaDylib = [runtimePath stringByAppendingPathComponent:@"Contents/Home/jre/lib/jli/libjli.dylib"];
+        javaDylib = [runtimePath stringByAppendingPathComponent:@"Content/Home/lib/jli/libjli.dylib"];
     }
     else
     {
@@ -170,7 +172,7 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     {
         libjliPath = [javaDylib fileSystemRepresentation];
     }
-
+	
     void *libJLI = dlopen(libjliPath, RTLD_LAZY);
 
     JLI_Launch_t jli_LaunchFxnPtr = NULL;
@@ -378,38 +380,31 @@ int launch(char *commandName, int progargc, char *progargv[]) {
  *  Searches for a JRE 1.7 or later dylib.
  *  First checks the "usual" JRE location, and failing that looks for a JDK.
  */
-NSString * findDylib (
-        bool isDebugging)
+NSString * findDylib (bool isDebugging)
 {
     NSString *javaDylib = nil;
-  
+	NSString *javahome = nil;
+	NSString *testfile = nil;
+	
     if (isDebugging) { NSLog (@"Searching for a JRE."); }
-  
-    if ([[NSFileManager defaultManager] fileExistsAtPath: @JRE_JAVA]) {
-      /* Since we're running on 10.7+ only and Oracle JRE 7+ installs in /Library/Java and JRE6 from Apple
-       * was installed in /System/Library/Java
-       * we only need to test for JRE_JAVA to get JRE 7+
-       * If for some reason, we really, really need to check the version, this if-statement will do:
-       *
-       * if (!system ("test $(\"" JRE_JAVA "\" -version 2>&1 | grep 'version' | sed  's|.*1.||;s|\\..*||') -ge 7")) {
-            javaDylib = @JRE_DYLIB;
-       * }
-       */
-      javaDylib = @JRE_DYLIB;
-    }
-    else
-    {
-      if (isDebugging) { NSLog (@"Could not find a JRE. Will look for a JDK."); }
-      if (!system("/usr/libexec/java_home -v 1.7+"))
-      {
-        system("/usr/libexec/java_home > /tmp/java_home");
-        javaDylib = [NSString stringWithContentsOfFile: @"/tmp/java_home"
-                                              encoding: NSUTF8StringEncoding
-                                                 error: NULL];
-        javaDylib = [javaDylib stringByAppendingString: @"/jre/lib/jli/libjli.dylib"];
-      }
-    }
-  
+	
+	if (!system("/usr/libexec/java_home -v 1.8+"))
+	{
+		system("/usr/libexec/java_home > /tmp/java_home");
+		javahome = [NSString stringWithContentsOfFile: @"/tmp/java_home"
+											 encoding: NSUTF8StringEncoding
+												error: NULL];
+		
+		// now test for a JRE
+		javahome = [javahome stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+		testfile = [javahome stringByAppendingString: @"/jre/lib/jli/libjli.dylib"];
+		if ([[NSFileManager defaultManager] fileExistsAtPath: testfile]) {
+			javaDylib = testfile;
+		} else {
+			javaDylib = [javahome stringByAppendingString: @"/lib/jli/libjli.dylib"];
+		}
+	}
+	
     return javaDylib;
 }
 
