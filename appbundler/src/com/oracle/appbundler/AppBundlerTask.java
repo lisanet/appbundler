@@ -78,6 +78,9 @@ public class AppBundlerTask extends Task {
     private String workingDirectory = null;
     private String minimumSystemVersion = null;    
 
+	private String jvmRequired = null;
+	private boolean jvmExact = false;
+	
     private String applicationCategory = null;
 
     private boolean highResolutionCapable = true;
@@ -163,7 +166,15 @@ public class AppBundlerTask extends Task {
     public void setMinimumSystemVersion(String v){
         this.minimumSystemVersion = v;
     }
-        
+	
+	public void setJVMRequired(String v){
+		this.jvmRequired = v;
+	}
+	
+	public void setJVMExact(boolean exact){
+		this.jvmExact = exact;
+	}
+	
     public void setApplicationCategory(String applicationCategory) {
         this.applicationCategory = applicationCategory;
     }
@@ -569,23 +580,17 @@ public class AppBundlerTask extends Task {
                 writeProperty(xout, "LSApplicationCategoryType", applicationCategory);
             }
             if(hideDockIcon){
-                writeKey(xout, "LSUIElement");
-                writeBoolean(xout, true); 
-                xout.writeCharacters("\n");
+				writeProperty(xout, "LSUIElement", true);
             }
             if (highResolutionCapable) {
                 /* make sure that a Principal class exists for the application */
                 writeProperty(xout, "NSPrincipalClass", "NSApplication");
-                writeKey(xout, "NSHighResolutionCapable");
-                writeBoolean(xout, true); 
-                xout.writeCharacters("\n");
-            }
+                writeProperty(xout, "NSHighResolutionCapable", true);
+             }
 
             if (supportsAutomaticGraphicsSwitching) {
-                writeKey(xout, "NSSupportsAutomaticGraphicsSwitching");
-                writeBoolean(xout, true); 
-                xout.writeCharacters("\n");
-            }
+                writeProperty(xout, "NSSupportsAutomaticGraphicsSwitching", true);
+             }
             if(registeredProtocols.size() > 0){
                 writeKey(xout, "CFBundleURLTypes");
                 xout.writeStartElement(ARRAY_TAG);
@@ -613,7 +618,15 @@ public class AppBundlerTask extends Task {
             if (runtime != null) {
                 writeProperty(xout, "JVMRuntime", runtime.getDir().getParentFile().getParentFile().getName());
             }
-            
+			
+			if(jvmRequired != null) {
+				writeProperty(xout, "JVMVersion", jvmRequired);
+			}
+			
+			if (jvmExact) {
+				writeProperty(xout, "JVMExact", jvmExact);
+			}
+			
             if ( privileged != null ) {
                 writeProperty(xout, "JVMRunPrivileged", privileged);
             }
@@ -627,9 +640,7 @@ public class AppBundlerTask extends Task {
 
             // Write whether launcher be verbose with debug msgs
             if (isDebug) {
-                writeKey(xout, "JVMDebug");
-                writeBoolean(xout, isDebug);
-                xout.writeCharacters("\n");
+                writeProperty(xout, "JVMDebug", true);
             }
 
             // Write CFBundleDocument entries
@@ -670,9 +681,8 @@ public class AppBundlerTask extends Task {
                 writeKey(xout, "CFBundleTypeRole");
                 writeString(xout, bundleDocument.getRole());
                 
-                writeKey(xout, "LSTypeIsPackage");
-                writeBoolean(xout, bundleDocument.isPackage());
-                
+                writeProperty(xout, "LSTypeIsPackage", bundleDocument.isPackage());
+				
                 xout.writeEndElement();
                 xout.writeCharacters("\n");
             }
@@ -783,7 +793,15 @@ public class AppBundlerTask extends Task {
     
     private void writeBoolean(XMLStreamWriter xout, boolean value) throws XMLStreamException {
         xout.writeEmptyElement(value ? "true" : "false");
+		xout.writeCharacters("\n");
     }
+
+	private void writeProperty(XMLStreamWriter xout, String key, Boolean value) throws XMLStreamException {
+		if (value != null && value) {
+			writeKey(xout, key);
+			writeBoolean(xout, true);
+		}
+	}
 
     private void writeProperty(XMLStreamWriter xout, String key, String value) throws XMLStreamException {
         writeKey(xout, key);
