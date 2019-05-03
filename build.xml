@@ -40,7 +40,7 @@ questions.
     <target name="build" depends="package"/>
 
     <!-- Compile target -->
-    <target name="compile">
+    <target name="compile" depends="javajli">
         <mkdir dir="${ant.project.name}/${folder.classes}"/>
         <javac destDir="${ant.project.name}/${folder.classes}"
             includejavaruntime="true"
@@ -67,10 +67,6 @@ questions.
             </fileset>
         </copy>
 
-        <exec executable="/usr/libexec/java_home" outputproperty="libexec_javahome" />
-        <condition property="javahome" value="${env.JAVA_HOME}" else="${libexec_javahome}">
-            <isset property="env.JAVA_HOME"/>
-        </condition>
 
         <exec executable="cc">
             <arg value="-I"/>
@@ -79,7 +75,7 @@ questions.
             <arg value="${javahome}/include/darwin"/>
             <arg value="-o"/>
             <arg value="${ant.project.name}/${folder.classes}/com/oracle/appbundler/JavaAppLauncher"/>
-            <arg value='-DLIBJLI_DYLIB="${javahome}/jre/lib/jli/libjli.dylib"'/>
+            <arg value='-DLIBJLI_DYLIB="${javajli}/lib/jli/libjli.dylib"'/>
             <arg value="-framework"/>
             <arg value="Cocoa"/>
             <arg value="-F"/>
@@ -92,6 +88,7 @@ questions.
     <!-- Clean target -->
     <target name="clean">
         <delete dir="${ant.project.name}/${folder.bin}"/>
+		<delete file="${ant.project.name}-${version}.jar"/>
         <delete dir="HelloWorld.app"/>
         <delete dir="SwingSet2.app"/>
         <delete dir="SwingSet2Plugin.app"/>
@@ -116,6 +113,8 @@ questions.
                 <include name="*.zip"/>
             </fileset>
         </jar>
+		
+		<copy file="${ant.project.name}/${folder.bin}/${ant.project.name}-${version}.jar" todir="." overwrite="true"/>
     </target>
 
     <!-- Test targets -->
@@ -171,4 +170,16 @@ questions.
             <fileset refid="trimfiles"/>
         </replaceregexp>
     </target>
+	
+	<target name="javajli">
+		<exec executable="/usr/libexec/java_home" outputproperty="libexec_javahome" />
+		<condition property="javahome" value="${env.JAVA_HOME}" else="${libexec_javahome}">
+			<isset property="env.JAVA_HOME"/>
+		</condition>
+		<condition property="javajli" value="${javahome}/jre" else="${javahome}">
+			<available property="jre" file="${javahome}/jre"/>
+		</condition>
+		<echo>${javajli}</echo>
+	</target>
+	
 </project>
