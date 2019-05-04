@@ -86,7 +86,7 @@ public class AppBundlerTask extends Task {
     private boolean highResolutionCapable = true;
     private boolean supportsAutomaticGraphicsSwitching = false;
     private boolean hideDockIcon = false;
-    private boolean isDebug = false;
+    private boolean debug = false;
 
     // JVM info properties
     private String mainClassName = null;
@@ -188,7 +188,7 @@ public class AppBundlerTask extends Task {
     }
     
     public void setDebug(boolean enabled) {
-        this.isDebug = enabled;
+        this.debug = enabled;
     }
 
     public void setSupportsAutomaticGraphicsSwitching(boolean supportsAutomaticGraphicsSwitching) {
@@ -639,7 +639,7 @@ public class AppBundlerTask extends Task {
             writeProperty(xout, "JVMMainClassName", mainClassName);
 
             // Write whether launcher be verbose with debug msgs
-            if (isDebug) {
+            if (debug) {
                 writeProperty(xout, "JVMDebug", true);
             }
 
