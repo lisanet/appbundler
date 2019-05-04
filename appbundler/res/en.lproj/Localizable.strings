@@ -5,4 +5,4 @@
 /* click to go to website of JRE */
 "NoJREInfo" = "Click 'Load' to visit the Java download website.";
 /* Need to download JRE */
-"needsJRE" = "To open this application, you need the Java SE runtime environment. Would you like to install it now?";
+"needsJRE %@" = "To open this application, you need Java %@.\n\nWould you like to load and install it now?";
