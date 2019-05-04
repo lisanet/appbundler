@@ -68,7 +68,7 @@ static int progargc = 0;
 static int launchCount = 0;
 
 int launch(char *, int, char **);
-NSString * findDylib (bool);
+NSString * findDylib (NSString *, bool);
 NSString * convertRelativeFilePath(NSString * path);
 
 int main(int argc, char *argv[]) {
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
         
           result = [alert runModal];
           if (result == NSAlertFirstButtonReturn) {
-            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString: @"http://java.com/download/"]];
+            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString: @"https://aws.amazon.com/de/corretto/"]];
             result = 0;
           }
           
@@ -148,7 +148,32 @@ int launch(char *commandName, int progargc, char *progargv[]) {
             return 0;
         }
     }
+	
+	// what java version is required
+    NSString *jvm_version;
+    NSString *java_version;
+    BOOL jvm_exact = NO;
     
+	java_version = [infoDictionary objectForKey:@JVM_VERSION_KEY];
+    if (java_version == nil) {
+        java_version = @"8";  // minumum is Java 8
+    }
+    // remove a potentila 1.x from the version string, so that java_version is alway an int to be better read in a message box
+    if ([java_version hasPrefix:@"1."]) {
+        java_version = [java_version substringFromIndex: 3];
+    }
+	if ([java_version integerValue] < 9) {
+		jvm_version = [NSString stringWithFormat: @"1.%@", java_version] ;
+    } else {
+        jvm_version = java_version;
+    }
+    // check if we require the exact Java version
+    jvm_exact = [[infoDictionary objectForKey: @JVM_VERSION_EXACT_KEY] boolValue];
+    if (!jvm_exact) {
+        jvm_version = [java_version stringByAppendingString: @"+"];
+    }
+    
+	
     // Locate the JLI_Launch() function
     NSString *runtime = [infoDictionary objectForKey:@JVM_RUNTIME_KEY];
     
@@ -160,7 +185,7 @@ int launch(char *commandName, int progargc, char *progargv[]) {
     }
     else
     {
-        javaDylib = findDylib (isDebugging);
+        javaDylib = findDylib (jvm_version, isDebugging);
     }
     if (isDebugging) {
         NSLog(@"Java Runtime Path (relative): '%@'", runtimePath);
@@ -182,7 +207,7 @@ int launch(char *commandName, int progargc, char *progargv[]) {
 
     if (jli_LaunchFxnPtr == NULL) {
       [[NSException exceptionWithName: @"NoJREError"
-                               reason: NSLocalizedString(@"needsJRE", @"Need to download JRE")
+                               reason: [NSString stringWithFormat: NSLocalizedString(@"needsJRE %@", @"Need to download JRE"),  java_version]
                              userInfo: nil] raise];
     }
 
@@ -377,20 +402,20 @@ int launch(char *commandName, int progargc, char *progargv[]) {
 }
 
 /**
- *  Searches for a JRE 1.7 or later dylib.
- *  First checks the "usual" JRE location, and failing that looks for a JDK.
+ *  Searches for a JRE, and failing that looks for a JDK.
  */
-NSString * findDylib (bool isDebugging)
+NSString * findDylib (NSString *java_version, bool isDebugging)
 {
     NSString *javaDylib = nil;
 	NSString *javahome = nil;
 	NSString *testfile = nil;
 	
-    if (isDebugging) { NSLog (@"Searching for a JRE."); }
+    if (isDebugging) { NSLog (@"Searching for Java %@", java_version); }
 	
-	if (!system("/usr/libexec/java_home -v 1.8+"))
+	if (!system("/usr/libexec/java_home"))
 	{
-		system("/usr/libexec/java_home > /tmp/java_home");
+		NSString *command = [NSString stringWithFormat:@"/usr/libexec/java_home -Fv %@ > /tmp/java_home", java_version];
+		system([command UTF8String]);
 		javahome = [NSString stringWithContentsOfFile: @"/tmp/java_home"
 											 encoding: NSUTF8StringEncoding
 												error: NULL];
