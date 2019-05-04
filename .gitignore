@@ -19,4 +19,5 @@ DerivedData
 *.ipa
 *.xcuserstate
 appbundler-xcode
+appbundler/bin
 
