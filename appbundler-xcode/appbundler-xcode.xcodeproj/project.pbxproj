@@ -23,6 +23,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FC853856227E5219001C5D37 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		FCA636BD1A57104E0007BFB5 /* appbundler.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = appbundler.html; sourceTree = "<group>"; };
 		FCA636BF1A57104E0007BFB5 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		FCA636C21A57104E0007BFB5 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -59,6 +60,7 @@
 				FCA636CE1A57104E0007BFB5 /* build.properties */,
 				FCA636CF1A57104E0007BFB5 /* build.xml */,
 				FCA636D01A57104E0007BFB5 /* README.md */,
+				FC853856227E5219001C5D37 /* LICENSE */,
 				FCA636D11A57104E0007BFB5 /* TODO */,
 				FCA636E11A58049F0007BFB5 /* xcodeant.sh */,
 				FCA636D71A57111E0007BFB5 /* Products */,
@@ -204,6 +206,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				de,
 			);
